@@ -1,9 +1,7 @@
 const { Contact } = require('../models/contact');
 const express = require("express");
 
-const { HttpError } = require("../helpers");
-
-const { ctrlWrapper } = require('../helpers');
+const { HttpError, ctrlWrapper } = require("../helpers");
 
 
 const getAllContacts = async (req, res) => {
