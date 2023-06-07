@@ -1,10 +1,11 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const { SECRET_KEY } = process.env;
+const { SECRET_KEY, PROJECT_URL } = process.env;
 
+const {nanoid} = require("nanoid");
 const { User } = require("../models/user");
-const { HttpError, ctrlWrapper } = require("../helpers");
+const { HttpError, ctrlWrapper, sendEmail } = require("../helpers");
 
 const gravatar = require("gravatar");
 
@@ -23,10 +24,20 @@ const register = async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
+  const verificationToken = nanoid();
 
   const avatarUrl = gravatar.url(email);
 
-  const newUser = await User.create({ ...req.body, password: hashedPassword, avatarUrl});
+  const newUser = await User.create({ ...req.body, password: hashedPassword, avatarUrl, verificationToken });
+
+  const verifyEmail = {
+    to: email,
+    subject: "Verification email",
+    html: `<a target:"_blank" href:"${PROJECT_URL}/api/users/verify/${verificationToken}">Click to verify email</a>`,
+  };
+
+  await sendEmail(verifyEmail);
+
 
   res.status(201).json({
     email: newUser.email,
