@@ -10,9 +10,14 @@ const loginSchema = Joi.object({
   password: Joi.string().required().min(6),
 });
 
+const userEmailSchema = Joi.object({
+  email: Joi.string().email().required()
+});
+
 const schemas = {
   register: registerSchema,
   login: loginSchema,
+  userEmailSchema
 };
 
 module.exports = { schemas };

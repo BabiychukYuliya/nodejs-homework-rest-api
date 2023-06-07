@@ -33,7 +33,7 @@ const register = async (req, res) => {
   const verifyEmail = {
     to: email,
     subject: "Verification email",
-    html: `<a target:"_blank" href:"${PROJECT_URL}/api/users/verify/${verificationToken}">Click to verify email</a>`,
+    html: `<a target="_blank" href="${PROJECT_URL}/api/users/verify/${verificationToken}">Click to verify email</a>`,
   };
 
   await sendEmail(verifyEmail);
@@ -45,12 +45,52 @@ const register = async (req, res) => {
   });
 };
 
+const verify = async (req, res) => {
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
+  if (!user) {
+    throw new HttpError(404, "User not found");
+  }
+
+  await User.findByIdAndUpdate(user._id, { verify: true, verificationToken: "" });
+  
+  res.status(200).json({ message: "Verification successful" });
+}
+
+const resendVerifyEmail = async (req, res) => { 
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (user) {
+    throw new HttpError(400, "missing required field email");
+   }
+
+  if (user.verify) {
+    throw new HttpError(400, "Verification has already been passed");
+  }
+
+    const verifyEmail = {
+    to: email,
+    subject: "Verification email",
+    html: `<a target="_blank" href="${PROJECT_URL}/api/users/verify/${verificationToken}">Click to verify email</a>`,
+  };
+
+  await sendEmail(verifyEmail);
+
+  res.status(200).json({ message: "Verification email sent" });
+}
+
+
+
 const login = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
 
   if (!user) {
     throw new HttpError(401, "Email or password is wrong");
+  }
+
+  if (!user.verify) {
+    throw new HttpError(404, "Email not verifying");
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -123,5 +163,7 @@ module.exports = {
   login: ctrlWrapper(login),
   getCurrent: ctrlWrapper(getCurrent),
   logout: ctrlWrapper(logout),
-  updateAvatar: ctrlWrapper(updateAvatar)
+  updateAvatar: ctrlWrapper(updateAvatar),
+  verify: ctrlWrapper(verify),
+  resendVerifyEmail: ctrlWrapper(resendVerifyEmail)
 };
